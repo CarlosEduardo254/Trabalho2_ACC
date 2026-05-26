@@ -1,5 +1,7 @@
 public class AVL  implements OperacoesArvore{
 
+    public long rotacaoCount = 0;
+
     protected class NoAVL {
         int chave;
         int fb; // Fator de Balanceamento, altura da direita menos a da esquerda
@@ -53,6 +55,8 @@ public class AVL  implements OperacoesArvore{
     }
 
     private NoAVL rotacao_direita(NoAVL no) {
+        rotacaoCount++;
+
         NoAVL u = no.esquerda;
         if (u.fb <= 0) { // Cobre o -1 (inserção/remoção) e o 0 (exclusivo da remoção)
             no.esquerda = u.direita;
@@ -66,6 +70,7 @@ public class AVL  implements OperacoesArvore{
             }
             return u;
         } else { // Rotação dupla
+            rotacaoCount++; // +1 porque a rotação dupla equivale a duas simples
             NoAVL v = u.direita;
             u.direita = v.esquerda;
             v.esquerda = u;
@@ -80,6 +85,8 @@ public class AVL  implements OperacoesArvore{
     }
 
     private NoAVL rotacao_esquerda(NoAVL no) {
+        rotacaoCount++;
+
         NoAVL u = no.direita;
         if (u.fb >= 0) { // Cobre o 1 (inserção/remoção) e o 0 (exclusivo da remoção)
             no.direita = u.esquerda;
@@ -93,6 +100,7 @@ public class AVL  implements OperacoesArvore{
             }
             return u;
         } else { // Rotação dupla
+            rotacaoCount++;
             NoAVL v = u.esquerda;
             u.esquerda = v.direita;
             v.direita = u;
@@ -179,5 +187,34 @@ public class AVL  implements OperacoesArvore{
             }
         }
         return no;
+    }
+
+    @Override
+    public int min() {
+        if (raiz == null) throw new java.util.NoSuchElementException("A árvore está vazia.");
+        NoAVL atual = raiz;
+        while (atual.esquerda != null) atual = atual.esquerda;
+        return atual.chave;
+    }
+
+    @Override
+    public int max() {
+        if (raiz == null) throw new java.util.NoSuchElementException("A árvore está vazia.");
+        NoAVL atual = raiz;
+        while (atual.direita != null) atual = atual.direita;
+        return atual.chave;
+    }
+
+    public int altura() {
+        return altura(raiz);
+    }
+
+    private int altura(NoAVL no) {
+        if (no == null) return -1;
+        return 1 + Math.max(altura(no.esquerda), altura(no.direita));
+    }
+
+    public void zerarContadores() {
+        this.rotacaoCount = 0;
     }
 }

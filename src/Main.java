@@ -19,7 +19,7 @@ public class Main {
         System.out.println("2. TESTE DE DESEMPENHO (O PIOR CASO)");
         System.out.println("==================================================");
         /*
-         * Vamos inserir números em ordem crescente (1, 2, 3, 4...).
+         * Vamos insert números em ordem crescente (1, 2, 3, 4...).
          * Na BST padrão, isso cria uma árvore totalmente desbalanceada (uma lista).
          * Na AVL, as rotações mantêm a árvore baixinha (logarítmica).
          */
@@ -47,7 +47,7 @@ public class Main {
         System.out.println("Tempo de Inserção BST: " + (tempoBST / 1_000_000.0) + " ms");
         System.out.println("Tempo de Inserção AVL: " + (tempoAVL / 1_000_000.0) + " ms");
 
-        // Medindo o tempo para buscar o ÚLTIMO elemento (o mais profundo)
+        // Medindo o tempo para search o ÚLTIMO elemento (o mais profundo)
         System.out.println("\nBuscando o último elemento (" + qtdElementos + "):");
 
         inicioBST = System.nanoTime();
@@ -64,10 +64,10 @@ public class Main {
 
     // Método auxiliar para não repetir código de teste
     private static void testarOperacoesBasicas(OperacoesArvore arvore) {
-        int[] valoresParaInserir = {50, 30, 70, 20, 40, 60, 80};
+        int[] valoresParainsert = {50, 30, 70, 20, 40, 60, 80};
 
         System.out.print("Inserindo valores: ");
-        for (int v : valoresParaInserir) {
+        for (int v : valoresParainsert) {
             System.out.print(v + " ");
             arvore.inserir(v);
         }

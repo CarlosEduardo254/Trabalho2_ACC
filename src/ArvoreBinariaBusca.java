@@ -84,4 +84,29 @@ public class ArvoreBinariaBusca implements OperacoesArvore{
 
         return no;
     }
+    
+    @Override
+    public int min() {
+        if (raiz == null) throw new java.util.NoSuchElementException("A árvore está vazia.");
+        NoBST atual = raiz;
+        while (atual.esquerda != null) atual = atual.esquerda;
+        return atual.chave;
+    }
+
+    @Override
+    public int max() {
+        if (raiz == null) throw new java.util.NoSuchElementException("A árvore está vazia.");
+        NoBST atual = raiz;
+        while (atual.direita != null) atual = atual.direita;
+        return atual.chave;
+    }
+
+    public int altura() {
+        return altura(raiz);
+    }
+
+    private int altura(NoBST no) {
+        if (no == null) return -1;
+        return 1 + Math.max(altura(no.esquerda), altura(no.direita));
+    }
 }
