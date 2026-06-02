@@ -1,85 +1,180 @@
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+
 public class Main {
+    private static final int[] TAMANHOS = {1000, 5000, 10000, 50000, 100000};
+    private static final String[] PADROES = {"Aleatorio", "Crescente", "Decrescente"};
+    private static final String[] ARVORES = {"BST", "AVL", "LLRB"};
+    private static final int REPETICOES = 10;
+
     public static void main(String[] args) {
-        // Instanciando as duas árvores
-        OperacoesArvore bst = new ArvoreBinariaBusca();
-        OperacoesArvore avl = new AVL();
+        System.out.println("Iniciando bateria de experimentos... Isso pode demorar alguns minutos.");
 
-        System.out.println("==================================================");
-        System.out.println("1. TESTE DE LÓGICA (INSERÇÃO, BUSCA E REMOÇÃO)");
-        System.out.println("==================================================");
+        try (PrintWriter writer = new PrintWriter(new FileWriter("resultados.csv"))) {
+            // Cabeçalho do arquivo CSV
+            writer.println("Estrutura,TamanhoN,Padrao,Operacao,TempoMedio_ms,DesvioPadrao_ms,Rotacoes,Altura");
 
-        System.out.println("\n-> Testando Árvore Binária de Busca Padrão (BST):");
-        testarOperacoesBasicas(bst);
-
-        System.out.println("\n-> Testando Árvore AVL:");
-        testarOperacoesBasicas(avl);
-
-
-        System.out.println("\n\n==================================================");
-        System.out.println("2. TESTE DE DESEMPENHO (O PIOR CASO)");
-        System.out.println("==================================================");
-        /*
-         * Vamos insert números em ordem crescente (1, 2, 3, 4...).
-         * Na BST padrão, isso cria uma árvore totalmente desbalanceada (uma lista).
-         * Na AVL, as rotações mantêm a árvore baixinha (logarítmica).
-         */
-        int qtdElementos = 5000; // Cuidado ao aumentar muito: a BST pode dar StackOverflow na recursão!
-
-        System.out.println("\nInserindo " + qtdElementos + " elementos sequenciais...");
-
-        OperacoesArvore bstDesempenho = new ArvoreBinariaBusca();
-        OperacoesArvore avlDesempenho = new AVL();
-
-        // Medindo tempo de inserção da BST
-        long inicioBST = System.nanoTime();
-        for (int i = 1; i <= qtdElementos; i++) {
-            bstDesempenho.inserir(i);
+            for (int n : TAMANHOS) {
+                for (String padrao : PADROES) {
+                    for (String nomeArvore : ARVORES) {
+                        System.out.println("Testando: " + nomeArvore + " | n=" + n + " | Padrão=" + padrao);
+                        executarExperimento(writer, nomeArvore, n, padrao);
+                    }
+                }
+            }
+            System.out.println("\n✅ Experimentos finalizados com sucesso! Resultados salvos em 'resultados.csv'.");
+        } catch (IOException e) {
+            System.err.println("Erro ao salvar o arquivo CSV: " + e.getMessage());
         }
-        long tempoBST = System.nanoTime() - inicioBST;
-
-        // Medindo tempo de inserção da AVL
-        long inicioAVL = System.nanoTime();
-        for (int i = 1; i <= qtdElementos; i++) {
-            avlDesempenho.inserir(i);
-        }
-        long tempoAVL = System.nanoTime() - inicioAVL;
-
-        System.out.println("Tempo de Inserção BST: " + (tempoBST / 1_000_000.0) + " ms");
-        System.out.println("Tempo de Inserção AVL: " + (tempoAVL / 1_000_000.0) + " ms");
-
-        // Medindo o tempo para search o ÚLTIMO elemento (o mais profundo)
-        System.out.println("\nBuscando o último elemento (" + qtdElementos + "):");
-
-        inicioBST = System.nanoTime();
-        bstDesempenho.buscar(qtdElementos);
-        tempoBST = System.nanoTime() - inicioBST;
-
-        inicioAVL = System.nanoTime();
-        avlDesempenho.buscar(qtdElementos);
-        tempoAVL = System.nanoTime() - inicioAVL;
-
-        System.out.println("Tempo de Busca BST: " + tempoBST + " nanosegundos");
-        System.out.println("Tempo de Busca AVL: " + tempoAVL + " nanosegundos");
     }
 
-    // Método auxiliar para não repetir código de teste
-    private static void testarOperacoesBasicas(OperacoesArvore arvore) {
-        int[] valoresParainsert = {50, 30, 70, 20, 40, 60, 80};
+    private static void executarExperimento(PrintWriter writer, String nomeArvore, int n, String padrao) {
+        long[] temposInsercao = new long[REPETICOES];
+        long[] temposBusca = new long[REPETICOES];
+        long[] temposRemocao = new long[REPETICOES];
 
-        System.out.print("Inserindo valores: ");
-        for (int v : valoresParainsert) {
-            System.out.print(v + " ");
-            arvore.inserir(v);
+        long rotacoesFinais = 0;
+        int alturaFinal = 0;
+        boolean falhouPorStackOverflow = false;
+
+        for (int i = 0; i < REPETICOES; i++) {
+            OperacoesArvore arvore = instanciarArvore(nomeArvore);
+
+            int[] dadosInsercao = gerarVetorInsercao(n, padrao);
+            int[] dadosBusca = gerarVetorBusca(n); // 50% presentes, 50% ausentes
+            int[] dadosRemocao = gerarVetorRemocao(n); // Ordem aleatória
+
+            try {
+                // 1. Teste de Inserção
+                long inicio = System.nanoTime();
+                for (int valor : dadosInsercao) {
+                    arvore.inserir(valor);
+                }
+                temposInsercao[i] = System.nanoTime() - inicio;
+
+                // Captura de métricas estruturais apenas na primeira rodada (para não pesar)
+                if (i == 0) {
+                    rotacoesFinais = arvore.getRotacoes();
+                    alturaFinal = arvore.altura();
+                }
+
+                // 2. Teste de Busca
+                inicio = System.nanoTime();
+                for (int valor : dadosBusca) {
+                    arvore.buscar(valor);
+                }
+                temposBusca[i] = System.nanoTime() - inicio;
+
+                // 3. Teste de Remoção
+                inicio = System.nanoTime();
+                for (int valor : dadosRemocao) {
+                    arvore.remover(valor);
+                }
+                temposRemocao[i] = System.nanoTime() - inicio;
+
+            } catch (StackOverflowError e) {
+                falhouPorStackOverflow = true;
+                break; // Se estourou a pilha, aborta as repetições deste cenário
+            }
         }
-        System.out.println();
 
-        System.out.println("Buscando 40 (deve ser true): " + arvore.buscar(40));
-        System.out.println("Buscando 90 (deve ser false): " + arvore.buscar(90));
+        if (falhouPorStackOverflow) {
+            System.out.println("   -> ⚠️ StackOverflowError! Altura excedeu a pilha do Java.");
+            // Escreve no CSV avisando que falhou (útil para o relatório)
+            writer.printf("%s,%d,%s,%s,ERRO,ERRO,ERRO,ERRO\n", nomeArvore, n, padrao, "Insercao");
+            writer.printf("%s,%d,%s,%s,ERRO,ERRO,ERRO,ERRO\n", nomeArvore, n, padrao, "Busca");
+            writer.printf("%s,%d,%s,%s,ERRO,ERRO,ERRO,ERRO\n", nomeArvore, n, padrao, "Remocao");
+        } else {
+            // Calcula e salva estatísticas de Inserção
+            Estatistica estIns = calcularEstatisticas(temposInsercao);
+            writer.printf("%s,%d,%s,%s,%.4f,%.4f,%d,%d\n", nomeArvore, n, padrao, "Insercao", estIns.mediaMs, estIns.desvioMs, rotacoesFinais, alturaFinal);
 
-        System.out.println("Removendo o 30...");
-        arvore.remover(30);
+            // Calcula e salva estatísticas de Busca (sem rotações, mantemos a altura final anterior)
+            Estatistica estBusca = calcularEstatisticas(temposBusca);
+            writer.printf("%s,%d,%s,%s,%.4f,%.4f,-,-\n", nomeArvore, n, padrao, "Busca", estBusca.mediaMs, estBusca.desvioMs);
 
-        System.out.println("Buscando 30 após remoção (deve ser false): " + arvore.buscar(30));
-        System.out.println("Buscando 40 após remoção do pai (deve ser true): " + arvore.buscar(40));
+            // Calcula e salva estatísticas de Remoção
+            Estatistica estRem = calcularEstatisticas(temposRemocao);
+            writer.printf("%s,%d,%s,%s,%.4f,%.4f,-,-\n", nomeArvore, n, padrao, "Remocao", estRem.mediaMs, estRem.desvioMs);
+        }
+    }
+
+    // --- MÉTODOS AUXILIARES ---
+
+    private static OperacoesArvore instanciarArvore(String nome) {
+        switch (nome) {
+            case "BST": return new ArvoreBinariaBusca();
+            case "AVL": return new AVL();
+            case "LLRB": return new LLRB();
+            default: throw new IllegalArgumentException("Árvore desconhecida");
+        }
+    }
+
+    private static int[] gerarVetorInsercao(int n, String padrao) {
+        int[] vetor = new int[n];
+        List<Integer> lista = new ArrayList<>(n);
+        for (int i = 1; i <= n; i++) lista.add(i);
+
+        if (padrao.equals("Aleatorio")) {
+            Collections.shuffle(lista, new Random(42)); // Seed fixa para reprodutibilidade justa
+        } else if (padrao.equals("Decrescente")) {
+            Collections.reverse(lista);
+        } // Crescente já está na ordem certa
+
+        for (int i = 0; i < n; i++) vetor[i] = lista.get(i);
+        return vetor;
+    }
+
+    private static int[] gerarVetorBusca(int n) {
+        // O documento pede busca com elementos presentes e ausentes.
+        // Vamos buscar 'n' elementos: metade entre 1 e n (presentes), metade entre n+1 e 2n (ausentes)
+        List<Integer> lista = new ArrayList<>(n);
+        for (int i = 1; i <= n / 2; i++) lista.add(i); // Presentes
+        for (int i = n + 1; i <= n + (n / 2); i++) lista.add(i); // Ausentes
+        Collections.shuffle(lista, new Random(84));
+
+        int[] vetor = new int[n];
+        for (int i = 0; i < n; i++) vetor[i] = lista.get(i);
+        return vetor;
+    }
+
+    private static int[] gerarVetorRemocao(int n) {
+        // Remoção aleatória: remove todos os elementos inseridos de forma bagunçada
+        List<Integer> lista = new ArrayList<>(n);
+        for (int i = 1; i <= n; i++) lista.add(i);
+        Collections.shuffle(lista, new Random(128));
+
+        int[] vetor = new int[n];
+        for (int i = 0; i < n; i++) vetor[i] = lista.get(i);
+        return vetor;
+    }
+
+    // Estrutura simples para retornar dois valores do cálculo
+    private static class Estatistica {
+        double mediaMs;
+        double desvioMs;
+    }
+
+    private static Estatistica calcularEstatisticas(long[] temposNanos) {
+        Estatistica est = new Estatistica();
+        double soma = 0;
+        for (long t : temposNanos) {
+            soma += (t / 1_000_000.0); // Converte Nano para Milisegundos
+        }
+        est.mediaMs = soma / temposNanos.length;
+
+        double somaVariancia = 0;
+        for (long t : temposNanos) {
+            double tempoMs = t / 1_000_000.0;
+            somaVariancia += Math.pow(tempoMs - est.mediaMs, 2);
+        }
+        est.desvioMs = Math.sqrt(somaVariancia / temposNanos.length);
+
+        return est;
     }
 }

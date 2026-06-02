@@ -4,4 +4,9 @@ public interface OperacoesArvore {
     void remover(int valor);
     int min();
     int max();
+    void imprimirEmOrdem();
+    int altura();
+    long getRotacoes();
+    long getTrocaCor();
+    void zerarContadores();
 }

@@ -1,6 +1,6 @@
 public class AVL  implements OperacoesArvore{
 
-    public long rotacaoCount = 0;
+    private long rotacaoCount = 0;
 
     protected class NoAVL {
         int chave;
@@ -205,8 +205,32 @@ public class AVL  implements OperacoesArvore{
         return atual.chave;
     }
 
+    @Override
+    public void imprimirEmOrdem() {
+        imprimirEmOrdem(raiz);
+        System.out.println();
+    }
+
+    private void imprimirEmOrdem(NoAVL no) {
+        if (no != null) {
+            imprimirEmOrdem(no.esquerda);
+            System.out.print(no.chave + " - ");
+            imprimirEmOrdem(no.direita);
+        }
+    }
+
     public int altura() {
         return altura(raiz);
+    }
+
+    @Override
+    public long getRotacoes() {
+        return this.rotacaoCount;
+    }
+
+    @Override
+    public long getTrocaCor() {
+        return 0;
     }
 
     private int altura(NoAVL no) {

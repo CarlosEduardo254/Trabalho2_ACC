@@ -6,8 +6,8 @@ public class LLRB implements OperacoesArvore {
 
     private NoRB raiz;
 
-    public long rotacaoCount = 0;
-    public long trocaCorCount = 0;
+    private long rotacaoCount = 0;
+    private long trocaCorCount = 0;
 
     protected class NoRB {
         int chave;
@@ -78,7 +78,7 @@ public class LLRB implements OperacoesArvore {
         while (x != null) {
             if (valor < x.chave) x = x.esquerda;
             else if (valor > x.chave) x = x.direita;
-            else return true; 
+            else return true;
         }
         return false;
     }
@@ -169,8 +169,32 @@ public class LLRB implements OperacoesArvore {
         return altura(raiz);
     }
 
+    @Override
+    public void imprimirEmOrdem() {
+        imprimirEmOrdem(raiz);
+        System.out.println();
+    }
+
+    private void imprimirEmOrdem(NoRB no) {
+        if(no != null) {
+            imprimirEmOrdem(no.esquerda);
+            System.out.print(no.chave + " - ");
+            imprimirEmOrdem(no.direita);
+        }
+    }
+
+    @Override
+    public long getRotacoes() {
+        return this.rotacaoCount;
+    }
+
+    @Override
+    public long getTrocaCor() {
+        return this.trocaCorCount;
+    }
+
     private int altura(NoRB x) {
-        if (x == null) return -1; 
+        if (x == null) return -1;
         return 1 + Math.max(altura(x.esquerda), altura(x.direita));
     }
 

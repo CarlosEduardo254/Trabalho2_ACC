@@ -101,8 +101,36 @@ public class ArvoreBinariaBusca implements OperacoesArvore{
         return atual.chave;
     }
 
+    @Override
+    public void imprimirEmOrdem() {
+        imprimirEmOrdem(raiz);
+        System.out.println();
+    }
+    private void imprimirEmOrdem(NoBST no) {
+        if (no != null) {
+            imprimirEmOrdem(no.esquerda);
+            System.out.print(no.chave + " - ");
+            imprimirEmOrdem(no.direita);
+        }
+    }
+
     public int altura() {
         return altura(raiz);
+    }
+
+    @Override
+    public long getRotacoes() {
+        return 0;
+    }
+
+    @Override
+    public long getTrocaCor() {
+        return 0;
+    }
+
+    @Override
+    public void zerarContadores() {
+        // Não tem contadores para zerar na BST
     }
 
     private int altura(NoBST no) {
