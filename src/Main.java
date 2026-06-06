@@ -13,7 +13,7 @@ public class Main {
     private static final int REPETICOES = 10;
 
     public static void main(String[] args) {
-        System.out.println("Iniciando bateria de experimentos... Isso pode demorar alguns minutos.");
+        System.out.println("Iniciando experimentos");
 
         try (PrintWriter writer = new PrintWriter(new FileWriter("resultados.csv"))) {
             // Cabeçalho do arquivo CSV
@@ -22,12 +22,12 @@ public class Main {
             for (int n : TAMANHOS) {
                 for (String padrao : PADROES) {
                     for (String nomeArvore : ARVORES) {
-                        System.out.println("Testando: " + nomeArvore + " | n=" + n + " | Padrão=" + padrao);
+                        System.out.println("Testando: " + nomeArvore + " | Quantidade = " + n + " | Padrão = " + padrao);
                         executarExperimento(writer, nomeArvore, n, padrao);
                     }
                 }
             }
-            System.out.println("\n✅ Experimentos finalizados com sucesso! Resultados salvos em 'resultados.csv'.");
+            System.out.println("\nExperimentos finalizados. Resultados salvos em 'resultados.csv'");
         } catch (IOException e) {
             System.err.println("Erro ao salvar o arquivo CSV: " + e.getMessage());
         }
@@ -46,11 +46,11 @@ public class Main {
             OperacoesArvore arvore = instanciarArvore(nomeArvore);
 
             int[] dadosInsercao = gerarVetorInsercao(n, padrao);
-            int[] dadosBusca = gerarVetorBusca(n); // 50% presentes, 50% ausentes
-            int[] dadosRemocao = gerarVetorRemocao(n); // Ordem aleatória
+            int[] dadosBusca = gerarVetorBusca(n);
+            int[] dadosRemocao = gerarVetorRemocao(n);
 
             try {
-                // 1. Teste de Inserção
+                // Inserção
                 long inicio = System.nanoTime();
                 for (int valor : dadosInsercao) {
                     arvore.inserir(valor);
@@ -63,14 +63,14 @@ public class Main {
                     alturaFinal = arvore.altura();
                 }
 
-                // 2. Teste de Busca
+                // Busca
                 inicio = System.nanoTime();
                 for (int valor : dadosBusca) {
                     arvore.buscar(valor);
                 }
                 temposBusca[i] = System.nanoTime() - inicio;
 
-                // 3. Teste de Remoção
+                // Remoção
                 inicio = System.nanoTime();
                 for (int valor : dadosRemocao) {
                     arvore.remover(valor);
@@ -79,12 +79,12 @@ public class Main {
 
             } catch (StackOverflowError e) {
                 falhouPorStackOverflow = true;
-                break; // Se estourou a pilha, aborta as repetições deste cenário
+                break; // Caso estoure a pilha, aborta as repetições deste cenário
             }
         }
 
         if (falhouPorStackOverflow) {
-            System.out.println("   -> ⚠️ StackOverflowError! Altura excedeu a pilha do Java.");
+            System.out.println("No teste para uma entrada com " + n + " valores a altura da árvore excedeu a pilha do Java rodando a " + nomeArvore);
             // Escreve no CSV avisando que falhou (útil para o relatório)
             writer.printf("%s,%d,%s,%s,ERRO,ERRO,ERRO,ERRO\n", nomeArvore, n, padrao, "Insercao");
             writer.printf("%s,%d,%s,%s,ERRO,ERRO,ERRO,ERRO\n", nomeArvore, n, padrao, "Busca");
@@ -92,19 +92,18 @@ public class Main {
         } else {
             // Calcula e salva estatísticas de Inserção
             Estatistica estIns = calcularEstatisticas(temposInsercao);
-            writer.printf("%s,%d,%s,%s,%.4f,%.4f,%d,%d\n", nomeArvore, n, padrao, "Insercao", estIns.mediaMs, estIns.desvioMs, rotacoesFinais, alturaFinal);
+            writer.printf(java.util.Locale.US, "%s,%d,%s,%s,%.4f,%.4f,%d,%d\n", nomeArvore, n, padrao, "Insercao", estIns.mediaMs, estIns.desvioMs, rotacoesFinais, alturaFinal);
 
-            // Calcula e salva estatísticas de Busca (sem rotações, mantemos a altura final anterior)
+            // Calcula e salva estatísticas de Busca
             Estatistica estBusca = calcularEstatisticas(temposBusca);
-            writer.printf("%s,%d,%s,%s,%.4f,%.4f,-,-\n", nomeArvore, n, padrao, "Busca", estBusca.mediaMs, estBusca.desvioMs);
+            writer.printf(java.util.Locale.US, "%s,%d,%s,%s,%.4f,%.4f,-,-\n", nomeArvore, n, padrao, "Busca", estBusca.mediaMs, estBusca.desvioMs);
 
             // Calcula e salva estatísticas de Remoção
             Estatistica estRem = calcularEstatisticas(temposRemocao);
-            writer.printf("%s,%d,%s,%s,%.4f,%.4f,-,-\n", nomeArvore, n, padrao, "Remocao", estRem.mediaMs, estRem.desvioMs);
+            writer.printf(java.util.Locale.US, "%s,%d,%s,%s,%.4f,%.4f,-,-\n", nomeArvore, n, padrao, "Remocao", estRem.mediaMs, estRem.desvioMs);
         }
     }
 
-    // --- MÉTODOS AUXILIARES ---
 
     private static OperacoesArvore instanciarArvore(String nome) {
         switch (nome) {
@@ -121,7 +120,7 @@ public class Main {
         for (int i = 1; i <= n; i++) lista.add(i);
 
         if (padrao.equals("Aleatorio")) {
-            Collections.shuffle(lista, new Random(42)); // Seed fixa para reprodutibilidade justa
+            Collections.shuffle(lista, new Random(42));
         } else if (padrao.equals("Decrescente")) {
             Collections.reverse(lista);
         } // Crescente já está na ordem certa
@@ -131,8 +130,8 @@ public class Main {
     }
 
     private static int[] gerarVetorBusca(int n) {
-        // O documento pede busca com elementos presentes e ausentes.
-        // Vamos buscar 'n' elementos: metade entre 1 e n (presentes), metade entre n+1 e 2n (ausentes)
+        // Como o documento pede busca com elementos presentes e ausentes.
+        // Iremos buscar 'n' elementos com metade entre 1 e n (presentes), metade entre n+1 e 2n (ausentes)
         List<Integer> lista = new ArrayList<>(n);
         for (int i = 1; i <= n / 2; i++) lista.add(i); // Presentes
         for (int i = n + 1; i <= n + (n / 2); i++) lista.add(i); // Ausentes
@@ -144,7 +143,7 @@ public class Main {
     }
 
     private static int[] gerarVetorRemocao(int n) {
-        // Remoção aleatória: remove todos os elementos inseridos de forma bagunçada
+        // Remove todos os elementos inseridos de forma aleatória
         List<Integer> lista = new ArrayList<>(n);
         for (int i = 1; i <= n; i++) lista.add(i);
         Collections.shuffle(lista, new Random(128));
@@ -154,7 +153,6 @@ public class Main {
         return vetor;
     }
 
-    // Estrutura simples para retornar dois valores do cálculo
     private static class Estatistica {
         double mediaMs;
         double desvioMs;
